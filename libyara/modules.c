@@ -102,6 +102,29 @@ int yr_modules_do_declarations(
   return ERROR_UNKNOWN_MODULE;
 }
 
+int yr_modules_do_load(
+    const char* module_name,
+    YR_OBJECT* module_structure,
+    YR_SCAN_CONTEXT* context,
+    YR_MODULE_IMPORT* module_import)
+{
+  int i;
+
+  for (i = 0; i < sizeof(yr_modules_table) / sizeof(YR_MODULE); i++)
+  {
+    if (strcmp(yr_modules_table[i].name, module_name) == 0)
+    {
+      return yr_modules_table[i].load(
+          context,
+          module_structure,
+          module_import->module_data,
+          module_import->module_data_size);
+    }
+  }
+
+  return ERROR_UNKNOWN_MODULE;
+}
+
 int yr_modules_load(const char* module_name, YR_SCAN_CONTEXT* context)
 {
   int result;
@@ -148,19 +171,9 @@ int yr_modules_load(const char* module_name, YR_SCAN_CONTEXT* context)
           context->objects_table, module_name, NULL, module_structure),
       yr_object_destroy(module_structure));
 
-  for (YR_MODULE* module = yr_modules_table;
-       module->name != NULL && module->load != NULL;
-       module++)
-  {
-    if (strcmp(module->name, module_name) == 0)
-    {
-      result = module->load(
-          context, module_structure, mi.module_data, mi.module_data_size);
-
-      if (result != ERROR_SUCCESS)
-        return result;
-    }
-  }
+  FAIL_ON_ERROR_WITH_CLEANUP(
+      yr_modules_do_load(module_name, module_structure, context, &mi),
+      yr_object_destroy(module_structure));
 
   result = context->callback(
       context,
@@ -196,4 +209,19 @@ int yr_modules_unload_all(YR_SCAN_CONTEXT* context)
 YR_MODULE* yr_modules_get_table(void)
 {
   return yr_modules_table;
+}
+
+int yr_modules_do_unload(const char* module_name, YR_OBJECT* module_structure)
+{
+  int i;
+
+  for (i = 0; i < sizeof(yr_modules_table) / sizeof(YR_MODULE); i++)
+  {
+    if (strcmp(yr_modules_table[i].name, module_name) == 0)
+    {
+      return yr_modules_table[i].unload(module_structure);
+    }
+  }
+
+  return ERROR_UNKNOWN_MODULE;
 }

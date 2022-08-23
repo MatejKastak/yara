@@ -320,6 +320,16 @@ int yr_modules_do_declarations(
 
 int yr_modules_load(const char* module_name, YR_SCAN_CONTEXT* context);
 
+YR_API int yr_modules_do_load(
+    const char* module_name,
+    YR_OBJECT* module_structure,
+    YR_SCAN_CONTEXT* context,
+    YR_MODULE_IMPORT* module_import);
+
+YR_API int yr_modules_do_unload(
+    const char* module_name,
+    YR_OBJECT* module_structure);
+
 int yr_modules_unload_all(YR_SCAN_CONTEXT* context);
 
 YR_API YR_MODULE* yr_modules_get_table(void);
